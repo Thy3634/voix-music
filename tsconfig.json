@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "esnext",
+    "moduleResolution": "node",
+    "strict": true,
+    "jsx": "preserve",
+    "sourceMap": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "lib": ["esnext", "dom"],
+    "types": [
+      "vite/client",
+      // 添加此类型以支持 node types
+      "node"
+    ],
+    // 添加这个插件以支持 .vue 模块导入
+    "plugins": [
+      {
+        "name": "@vuedx/typescript-plugin-vue"
+      }
+    ],
+    // 根目录设置到 ./src
+    "baseUrl": "./src",
+    // 同步添加 vite.config.ts 的 resolve.alias
+    "paths": {
+      "~/*": [
+        "./*"
+      ],
+      "#/*": [
+        "./pages/*"
+      ]
+    },
+    // 允许导入 js 模块
+    "allowJs": true,
+  },
+  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.tsx", "src/**/*.vue"]
+}
