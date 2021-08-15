@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+button {
+  @apply focus:outline-none;
+}
+
+body {
+  @apply bg-white dark:bg-gray-900 text-black dark:text-white;
+}

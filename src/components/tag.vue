@@ -1,25 +1,39 @@
 <template>
-  <van-tag
-    round
-    color="var(--theme-color)"
-    text-color="black"
-  >
+  <span class="inline-block text-black bg-theme rounded-full font-extrabold" :class="sizeClass">
     <slot></slot>
-  </van-tag>
+  </span>
 </template>
 <script lang='ts'>
-import { defineComponent } from "vue";
-import { Tag } from 'vant';
+import { computed, defineComponent, PropType } from "vue";
 
 export default defineComponent({
-  name: "tag",
-  components: { [Tag.name]: Tag }
+  name: "Tag",
+  props: {
+    size: {
+      type: String as PropType<'xs' | 'sm' | 'md' | 'lg' | 'xl'>,
+      default: 'md',
+    },
+  },
+  setup(props) {
+    const sizeClass = computed(() => {
+      switch (props.size) {
+        case 'xs':
+          return "text-xs py-0.5 px-1"
+        case 'sm':
+          return "text-sm py-1 px-2"
+        case 'md':
+          return "text-base py-1.5 px-3"
+        case 'lg':
+          return "text-lg py-2 px-4"
+        case 'xl':
+          return "text-xl py-2.5 px-5"
+        default:
+          return "text-base py-1.5 px-3"
+      }
+    })
+    return {
+      sizeClass
+    }
+  }
 });
 </script>
-<style scoped lang="less">
-.van-tag {
-  font-size: 0.6em;
-  font-weight: bold;
-  padding: 2vmin 4vmin;
-}
-</style>

@@ -1,0 +1,20 @@
+.dark .swiper-container {
+  --swiper-pagination-color: white;
+  --swiper-theme-color: white;
+}
+
+.swiper-container {
+  --swiper-pagination-color: black;
+  --swiper-theme-color: black;
+}
+
+.swiper-container:deep(.swiper-pagination.swiper-pagination-bullets
+    > .swiper-pagination-bullet) {
+  background-color: var(--swiper-pagination-color, var(--swiper-theme-color));
+  opacity: 0.3;
+}
+
+.swiper-container:deep(.swiper-pagination.swiper-pagination-bullets
+    > .swiper-pagination-bullet-active) {
+  opacity: 1;
+}

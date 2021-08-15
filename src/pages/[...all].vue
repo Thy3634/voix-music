@@ -1,10 +1,11 @@
 <template>
-  <div>404</div>
+  <div>404 NotFound</div>
 </template>
 <script lang='ts'>
 import { defineComponent } from "vue";
 export default defineComponent({
-  name: "404"
+  name: "Error",
+
 });
 </script>
 <style scoped>
