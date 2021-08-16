@@ -11,7 +11,7 @@
     </video>
     <button
       class="w-max bg-theme text-black px-6 py-4 rounded-full z-10 flex items-center space-x-1"
-      @click="phoneLogin"
+      @click="open = true"
     >
       <NeteaseMusicIcon />
       <span>网易云音乐账号登录</span>
@@ -119,7 +119,6 @@ export default defineComponent({
     const QRimg = ref('')
 
     const QRCodeLogin = async () => {
-      open.value = true
       let { data: { unikey } } = await QR.key()
       QRimg.value = (await QR.image(unikey)).data.qrimg;
 
@@ -153,8 +152,12 @@ export default defineComponent({
       password: ''
     })
     const phoneLogin = async () => {
-      open.value = true
-      console.log(phone(phoneForm.phone, phoneForm.password));
+      const { account: { id }, profile: { nickname, avatarUrl, birthday }, cookie, token } = await phone(phoneForm.phone, phoneForm.password)
+      user.token = token
+      document.cookie = cookie
+      user.account = { id, nickname, avatar: avatarUrl, birthday }
+      open.value = false
+      router.push({ path: '/home' })
     }
 
     return {

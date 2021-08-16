@@ -1,6 +1,8 @@
 import axios from "axios"
 
 import { Lrc } from "~/utils/parse"
+import { ResponseAlbum } from "./album"
+import { ResponseArtist } from "./artist"
 
 /**
  * 每日推荐歌曲
@@ -58,6 +60,15 @@ export async function downloadSong(url: string) {
  */
 export async function getLrc(id: number) {
     return (await axios.get<{ lrc: { lyric: string } }>('netease/lyric', { params: { id } })).data.lrc.lyric
+}
+
+export interface ResponseSong {
+    name: string
+    id: number
+    ar: ResponseArtist[]
+    al: ResponseAlbum
+    alia: string[]
+    mv: number
 }
 
 export interface Song {

@@ -1,7 +1,15 @@
 <template>
-  <main class="w-full max-w-screen-sm h-screen z-0">
-    <Swiper @progress="setProgress" :parallax="true">
-      <span class="absolute top-16 left-4 bg-transparent h-1.5 w-6 flex justify-between z-10">
+  <main class="w-full h-screen flex justify-center z-0">
+    <Swiper
+      @progress="setProgress"
+      :parallax="true"
+      :breakpoints="{ 768: { slidesPerView: 2, spaceBetween: 0 } }"
+      class="w-full max-w-screen-lg"
+    >
+      <!-- pagination -->
+      <span
+        class="absolute top-16 left-4 bg-transparent h-1.5 w-6 flex justify-between z-10 md:hidden"
+      >
         <span
           class="w-1.5 h-1.5 bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-50 rounded-full"
         ></span>
@@ -10,6 +18,7 @@
           class="w-1.5 h-1.5 bg-black dark:bg-white bg-opacity-10 dark:bg-opacity-50 rounded-full"
         ></span>
       </span>
+
       <SwiperSlide>
         <h1
           data-swiper-parallax="480%"

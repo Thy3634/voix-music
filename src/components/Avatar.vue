@@ -1,16 +1,17 @@
 <template>
-  <div class="w-8 h-8">
+  <span class="w-8 h-8">
     <img
-      v-if="src"
+      v-if="!error"
       :src="src"
       :alt="alt"
+      :onerror="error = true"
       class="inline-block w-full h-full object-cover rounded-full"
     />
     <UserCircleIcon v-else class="text-gray-400 w-full h-full"></UserCircleIcon>
-  </div>
+  </span>
 </template>
 <script lang='ts'>
-import { defineComponent } from "vue";
+import { defineComponent, ref } from "vue";
 
 import UserCircleIcon from "!/icons/solid/user-circle.svg?component";
 
@@ -20,8 +21,17 @@ export default defineComponent({
     UserCircleIcon
   },
   props: {
-    src: String,
+    src: {
+      type: String,
+      default: ''
+    },
     alt: String
+  },
+  setup() {
+    const error = ref(false)
+    return {
+      error
+    }
   }
 });
 </script>

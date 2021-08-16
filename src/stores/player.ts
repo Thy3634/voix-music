@@ -22,16 +22,23 @@ export const usePlayerStore = defineStore({
             duration: 0,
             lrc: [{ t: 0, l: "" }] as Lrc,
             lrcIndex: 0,
-            stop: async () => { },
+            src: undefined as unknown as AudioBufferSourceNode
         }
     },
     getters: {
         stime: (state): string => format.minuteSecond(state.time),
         sduration: (state): string => format.minuteSecond(state.duration),
         currentLrc: (state): string => state.lrc[state.lrcIndex].l,
+        progress: (state): number => state.time / state.duration,
     },
     actions: {
-        async play(when?: number, offset?: number) {
+        async play() {
+            // state
+            const preState = this.state
+            this.ctx.suspend()
+            this.state = "loading"
+
+            // load
             const src = this.ctx.createBufferSource()
             src.connect(this.als)
             this.als.connect(this.ctx.destination)
@@ -39,7 +46,7 @@ export const usePlayerStore = defineStore({
                 this.index += this.list.length
             }
             this.index = this.index % this.list.length
-
+            // load buffer
             let buffer
             buffer = await this.getBuffer()
             while (!buffer) {
@@ -47,19 +54,34 @@ export const usePlayerStore = defineStore({
                 buffer = await this.getBuffer()
             }
             src.buffer = buffer
-
+            // load lrc
             this.lrc = await this.getLrc()
-            src.onended = (ev) => {
-                this.index += 1
-                this.play()
-            }
-            this.stop = async () => {
-                src.stop()
-            }
-            this.ctx.resume()
-            this.state = "running"
-            src.start(when, offset)
+            this.src = src
 
+            // onended
+            src.onended = () => {
+                this.switch()
+            }
+
+            // state recover
+            switch (preState) {
+                case 'running':
+                    src.start()
+                    this.ctx.resume()
+                    this.state = 'running'
+                    break;
+                case 'loading':
+                case 'suspended':
+                    src.start()
+                    this.ctx.suspend()
+                    this.state = 'suspended'
+                case 'closed':
+                    this.ctx.suspend()
+                    this.state = 'closed'
+                    break;
+            }
+
+            // reset
             this.duration = src.buffer.duration
             this.offsetTime = this.ctx.currentTime
             this.lrcIndex = 0
@@ -71,8 +93,11 @@ export const usePlayerStore = defineStore({
                 if (!url) {
                     return
                 } else {
-                    this.state = "loading"
-                    this.list[this.index].buffer = await this.ctx.decodeAudioData(await downloadSong(url))
+                    try {
+                        this.list[this.index].buffer = await this.ctx.decodeAudioData(await downloadSong(url))
+                    } catch (error) {
+                        return
+                    }
                     return this.list[this.index].buffer
                 }
             }
@@ -87,12 +112,14 @@ export const usePlayerStore = defineStore({
             return lrc
         },
         /**
-         * 
-         * @param i 下标
+         * @param i 下标 @default next
          */
-        async switch(i: number) {
-            this.index = i - 1
-            await this.stop()
+        switch(i?: number) {
+            // stop current
+            this.src.stop()
+            i = i ? i : this.index + 1
+            this.index = i
+            this.play()
         },
         /**
          * 暂停或继续播放
@@ -101,10 +128,17 @@ export const usePlayerStore = defineStore({
             switch (this.state) {
                 case "suspended":
                     await this.ctx.resume()
-                    return
+                    this.state = 'running'
+                    break
                 case "running":
                     await this.ctx.suspend()
-                    return
+                    this.state = 'suspended'
+                    break
+                case 'closed':
+                    this.src.start()
+                    await this.ctx.resume()
+                    this.state = 'running'
+                    break
             }
         }
     }
@@ -112,9 +146,9 @@ export const usePlayerStore = defineStore({
 
 export async function initPlayer(logined?: boolean) {
     const store = usePlayerStore()
-    store.ctx.addEventListener("statechange", (ev) => {
-        store.state = store.ctx.state
-    })
+    // store.ctx.addEventListener("statechange", (ev) => {
+    //     store.state = store.ctx.state
+    // })
 
     setInterval(() => {
         if (store.state == "running") {
@@ -126,7 +160,7 @@ export async function initPlayer(logined?: boolean) {
     }, 1000)
     if (logined) {
         store.list = await recommend()
-        store.play(0)
+        store.play()
     }
 }
 /**

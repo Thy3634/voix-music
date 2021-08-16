@@ -17,5 +17,5 @@ export const QR = {
 }
 
 export async function phone(phone: string, password: string) {
-    return await axios.post<{ code: number, account: any }>('netease/login/cellphone', { phone, password })
+    return (await axios.post<{ code: number, account: { id: number, userName: string, salt: string }, cookie: string, token: string, profile: { avatarUrl: string, backgroundUrl: string, nickname: string, birthday: number, city: number } }>('netease/login/cellphone', { phone, password })).data
 }

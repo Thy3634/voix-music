@@ -1,5 +1,9 @@
 <template>
-  <div @click="toggle" class="w-full max-w-screen-sm h-screen flex flex-col justify-center">
+  <div
+    @click="toggle"
+    class="w-full h-screen flex flex-col justify-center relative"
+    :class="state == 'loading' ? 'cursor-wait' : ''"
+  >
     <Swiper
       virtual
       direction="vertical"
@@ -12,51 +16,64 @@
         v-for="(song, i) in list"
         :key="song.id"
         :virtualIndex="i"
-        class="w-full h-full flex flex-col justify-center"
+        @dblclick.stop="love(i)"
+        class="w-full h-full flex flex-col"
       >
-        <div class="w-screen h-2/3 flex flex-col justify-between">
+        <div class="w-full h-full flex flex-col justify-between">
           <img
             :src="song.album.pic"
             :alt="song.album.name"
             class="absolute top-0 left-0 w-full h-full object-cover object-center filter"
             :class="state != 'running' ? 'brightness-50' : ''"
           />
-          <div class="mx-4 text-xl h-1/3 font-bold z-10">{{ currentLrc }}</div>
-          <div class="mx-4 z-10">
-            <div class="space-x-2">
-              <Tag size="sm">+歌曲故事</Tag>
-              <Tag v-for="tag in song.tags" :key="tag" size="sm">#{{ tag }}</Tag>
+          <div class="text-xl font-bold mt-24 mx-4 z-10">{{ currentLrc }}</div>
+
+          <div class="z-10">
+            <div class="flex flex-wrap gap-2 mx-4">
+              <Tag size="sm" class="cursor-pointer">+歌曲故事</Tag>
+              <Tag v-for="tag in song.tags" :key="tag" size="sm" class="cursor-pointer">#{{ tag }}</Tag>
             </div>
 
-            <div class="flex justify-between my-2">
-              <h3 class="text-xl">{{ song.name }}</h3>
-              <HeartIcon
-                @click.capture="love(i)"
-                class="w-9 h-9"
-                :class="song.like ? 'text-red-500 love' : ''"
-              />
+            <div class="flex justify-between my-2 mx-4">
+              <div class="flex flex-col gap-y-2">
+                <h3 class="text-xl">{{ song.name }}</h3>
+                <div @click.stop="showArtists" class="flex items-center gap-2 cursor-pointer">
+                  <span class="inline-flex -space-x-4">
+                    <Avatar
+                      v-for="ar in song.artists"
+                      :src="ar.avatar"
+                      :key="ar.id"
+                      :alt="ar.name"
+                    />
+                  </span>
+                  <span>{{ song.artists.map((ar) => ar.name).join(' / ') }}</span>
+                </div>
+              </div>
+              <div>
+                <HeartIcon
+                  @click.stop="love(i)"
+                  class="w-9 h-9 cursor-pointer transition-colors"
+                  :class="song.like ? 'text-red-500' : ''"
+                />
+                <DotHorizontalIcon class="w-9 h-9 cursor-pointer" />
+              </div>
             </div>
-            <div class="flex justify-between">
-              <span>
-                <span class="mr-2">
-                  <Avatar
-                    v-for="ar in song.artists"
-                    :src="ar.avatar"
-                    :key="ar.id"
-                    :alt="ar.name"
-                    class="-mr-4 last:mr-0"
-                  />
-                </span>
-                <span class="text-lg">{{ song.artists.map((ar) => ar.name).join('/') }}</span>
-              </span>
-              <DotHorizontalIcon class="w-9 h-9" />
-            </div>
+            <Wave v-if="index == i" class="w-full h-24 z-20"></Wave>
           </div>
         </div>
-        <Wave v-if="state == 'running' && index == i" class="fixed bottom-0 z-20"></Wave>
       </SwiperSlide>
     </Swiper>
-    <component :is="stateIcon" class="fixed w-10 h-10 text-white z-20 self-center"></component>
+    <div
+      class="absolute text-white z-20 transform top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
+    >
+      <LoadingIcon v-if="state == 'loading'" class="w-10 h-10 animate-spin"></LoadingIcon>
+      <PlayIcon v-else-if="state == 'suspended' || state == 'closed'" class="w-10 h-10"></PlayIcon>
+    </div>
+    <div
+      v-show="state != 'running'"
+      class="absolute z-20 bottom-0 h-1 bg-yellow-300"
+      :style="{ width: sProgress }"
+    ></div>
   </div>
 </template>
 <script lang='ts'>
@@ -69,8 +86,9 @@ import Avatar from "~/components/Avatar.vue";
 import Wave from "./Wave.vue";
 import PlayIcon from "!/icons/solid/play.svg?component"
 import LoadingIcon from "!/icons/solid/loading.svg?component";
-import HeartIcon from "!/icons/outline/heart.svg?component"
+import HeartIcon from "!/icons/solid/heart.svg?component"
 import DotHorizontalIcon from "!/icons/outline/dots-horizontal.svg?component"
+import router from "~/router";
 
 SwiperCore.use([Virtual, Lazy])
 
@@ -87,37 +105,40 @@ export default defineComponent({
     HeartIcon,
     DotHorizontalIcon
   },
-  setup() {
+  emits: ['open-artists'],
+  setup(props, { emit }) {
     const index = ref(0)
     const onSlideChange = (swiper: any) => {
       index.value = swiper.activeIndex
     }
-    // let swiper: typeof Swiper
     const swiper = ref(null as unknown as typeof Swiper)
     const getSwiper = (s: typeof Swiper) => swiper.value = s
     const player = usePlayerStore()
+
     watch(index, async (i) => {
       if (player.index != i) {
-        await player.switch(i)
+        player.switch(i)
       }
     })
+
     watch(() => player.index, (i) => {
       index.value = i
       swiper.value.slideTo(i, 1000, false)
     })
+
     const love = (i: number) => {
       player.list[i].like = !player.list[i].like
     }
-    const stateIcon = computed(() => {
-      switch (player.state) {
-        case 'loading':
-          return LoadingIcon
-        case 'running':
-          return 'template'
-        default:
-          return PlayIcon
+
+    const showArtists = () => {
+      if (player.list[index.value].artists.length == 1) {
+        router.push({ path: `/artist/${player.list[index.value].artists[0].id}` })
       }
-    })
+      else {
+        emit('open-artists')
+      }
+    }
+
     return {
       getSwiper,
       index,
@@ -126,14 +147,10 @@ export default defineComponent({
       state: computed(() => player.state),
       currentLrc: computed(() => player.currentLrc),
       toggle: () => player.toggle(),
-      stateIcon,
       love,
+      showArtists,
+      sProgress: computed(() => `${player.progress * 100}%`),
     }
   },
 });
 </script>
-<style scoped>
-.love {
-  animation: ping 1s cubic-bezier(0.4, 0, 1, 0.1) 1;
-}
-</style>
